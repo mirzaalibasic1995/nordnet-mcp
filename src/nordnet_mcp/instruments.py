@@ -1,4 +1,5 @@
 import json
+import re
 
 _client = None
 
@@ -7,6 +8,9 @@ def configure(client):
     global _client
     _client = client
 
+# regular expression for validating instrument IDs: one or more comma-separated
+# int64 IDs (max 19 ASCII digits each). Meant for re.fullmatch, so no anchors.
+pattern = r"[0-9]{1,19}(,[0-9]{1,19})*"
 
 def register_tools(app):
 
@@ -17,6 +21,12 @@ def register_tools(app):
         Args:
             instrument_id: One or more instrument IDs (comma-separated)
         """
+        if not re.fullmatch(pattern, instrument_id):
+            raise ValueError(
+                f"Invalid instrument_id {instrument_id!r}: expected one or more "
+                "numeric IDs separated by commas, without spaces "
+                "(e.g. '2274236' or '2274236,1234567')."
+            )
         data = await _client.get(f"/instruments/{instrument_id}")
         return json.dumps(data, indent=2)
 
@@ -62,3 +72,5 @@ def register_tools(app):
         return json.dumps(data, indent=2)
 
     return app
+
+#
